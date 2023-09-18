@@ -21,6 +21,7 @@ planet = ''
 async def on_ready():
   print('The bot is ready')
 
+#Not used right now, was for limiting NEXUS pings
 async def ping_timer(num):
 
   global rebBaseTime, rebTurretTime, impBaseTime, impTurretTime
@@ -67,7 +68,7 @@ async def on_message(message):
   if message.channel.id in [
       1149773441956851713, 1127862884618211328, 1152231778342408223
   ]:
-
+    #Rebel base attacked
     if 'Rebel base' in message.content and 'is under attack' in message.content:
       reaction_emoji = discord.utils.get(message.guild.emojis, name='empire')
       await message.add_reaction(reaction_emoji)
@@ -77,7 +78,7 @@ async def on_message(message):
       await message.channel.send(mess)
       await editImg(msg)
       await message.channel.send(file=discord.File('pasted_picture.png'))
-
+    #Rebel turrets attacked
     elif 'Rebel base' in message.content and 'turrets' in message.content:
       reaction_emoji = discord.utils.get(message.guild.emojis, name='empire')
       await message.add_reaction(reaction_emoji)
@@ -86,7 +87,7 @@ async def on_message(message):
       await message.channel.send(mess)
       await editImg(msg)
       await message.channel.send(file=discord.File('pasted_picture.png'))
-
+    #Imperial turrets attacked
     elif 'Imperial base' in message.content and 'turrets' in message.content:
       reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
       await message.add_reaction(reaction_emoji)
@@ -94,7 +95,7 @@ async def on_message(message):
       await message.channel.send(mess)
       await editImg(msg)
       await message.channel.send(file=discord.File('pasted_picture.png'))
-
+    #Imperial base attacked
     elif 'Imperial base' in message.content and 'is under attack' in message.content:
       reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
       await message.add_reaction(reaction_emoji)
@@ -109,7 +110,7 @@ async def on_message(message):
     #reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
     #await message.add_reaction(reaction_emoji)
 
-
+#take the GCW text and place waypoint on correct map image
 async def editImg(message):
   global xcoord, ycoord
   if 'Tatooine' in message:
@@ -153,7 +154,7 @@ async def editImg(message):
 
   return
 
-
+#format GCW text from RESTO into /waypoint that can be pasted in game
 async def editWaypoint(msg):
   global xcoord, ycoord
   mess = msg
@@ -191,9 +192,10 @@ async def editWaypoint(msg):
   mess = re.sub('[(,]', '', mess)
 
   return mess
-
+#bot responds to 'Separatist' emoji reactions and posts a map to the base location of the message reacted to
 @client.event
 async def on_raw_reaction_add(payload):
+  #get channel and message content
   channelID = payload.channel_id
   messageID = payload.message_id
   channel = client.get_channel(channelID)
@@ -203,14 +205,14 @@ async def on_raw_reaction_add(payload):
   if channelID in [
       1149773441956851713, 1127862884618211328, 1152231778342408223
   ]:
-    if 'base' in msg.lower() and '(' in msg:
-      if payload.emoji.name == 'separatist':
-        mess = await editWaypoint(msg)
+    if 'base' in msg.lower() and '(' in msg: #GCW message containing base info and waypoint
+      if payload.emoji.name == 'separatist': #correct reaction emoji
+        mess = await editWaypoint(msg)       #format to /waypoint yada yada
         await channel.send(mess)
-        await editImg(msg)
+        await editImg(msg)                   #add the waypoint to the correct map image
         await channel.send(file=discord.File('pasted_picture.png'))
 
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-client.run('MTE1MjIyOTU4MTM5NTM0OTUwNA.GqBXML.YvztycVDTMn6pTXh_43YpY11H8mJpMllENKhmg')
+client.run(TOKEN)
