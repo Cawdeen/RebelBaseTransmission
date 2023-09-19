@@ -5,6 +5,10 @@ import re
 import discord
 from PIL import Image
 
+from dotenv import load_dotenv
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
+
 intents = discord.Intents.all()
 
 client = discord.Client(intents=intents)
@@ -213,6 +217,6 @@ async def on_raw_reaction_add(payload):
         await channel.send(file=discord.File('pasted_picture.png'))
 
 
-TOKEN = os.getenv('DISCORD_TOKEN')
+#TOKEN = os.getenv('DISCORD_TOKEN')
 
 client.run(TOKEN)
