@@ -13,10 +13,8 @@ intents = discord.Intents.all()
 
 client = discord.Client(intents=intents)
 
-rebBaseTime = 0
-rebTurretTime = 0
-impBaseTime = 0
-impTurretTime = 0
+pausedPings = []
+q=[]
 xcoord = 0
 ycoord = 0
 planet = ''
@@ -24,95 +22,104 @@ planet = ''
 @client.event
 async def on_ready():
   print('The bot is ready')
+  taskQueue = asyncio.create_task(message_queue())
+  await taskQueue
 
-#Not used right now, was for limiting NEXUS pings
-async def ping_timer(num):
+#timer to remove base from timeout
+async def pause_timer(message):
+  global pausedPings
+  await asyncio.sleep(600)
+  for i in pausedPings:
+    pMessage = i
+    if pMessage.content == message.content:
+      pausedPings.remove(i)
+      print('removed pause on message')
 
-  global rebBaseTime, rebTurretTime, impBaseTime, impTurretTime
-  newTime = 0
-  if num == 1 and rebBaseTime == 0:
-    rebBaseTime = 600  # 10 min lockout
-    while rebBaseTime > 0:
-      await asyncio.sleep(1)
-      rebBaseTime -= 1
-    print('timer up')
-    # TODO: Add times up message
+#repeating timer to dequeue messages
+async def message_queue():
+  global q
+  while True:
+    if len(q) > 0:
+      msg = q.pop(0)
+      await handle_message(msg)
+    await asyncio.sleep(5)
 
-  elif num == 2 and rebTurretTime == 0:
-    rebTurretTime = 1200  # 20 min lockout
-    while rebTurretTime > 0:
-      await asyncio.sleep(1)
-      rebTurretTime -= 1
-    print('timer up')
-    # TODO: Add times up message
+#take one message passed from dequeue method and create map and format text for waypoint.
+async def handle_message(message):
+  msg = message.content
+  #Rebel base attacked
+  if 'Rebel base' in message.content and 'is under attack' in message.content:
+    reaction_emoji = discord.utils.get(message.guild.emojis, name='empire')
+    await message.add_reaction(reaction_emoji)
+    await message.reply(
+        '<@&1090033169782296627> Imperial troops have entered the base!')
+    mess = await editWaypoint(msg)
+    await message.channel.send(mess)
+    await editImg(msg)
+    await message.channel.send(file=discord.File('pasted_picture.png'))
+  #Rebel turrets attacked
+  elif 'Rebel base' in message.content and 'turrets' in message.content:
+    reaction_emoji = discord.utils.get(message.guild.emojis, name='empire')
+    await message.add_reaction(reaction_emoji)
+    await message.reply('<@&1090033169782296627> Our turrets are taking fire!')
+    mess = await editWaypoint(msg)
+    await message.channel.send(mess)
+    await editImg(msg)
+    await message.channel.send(file=discord.File('pasted_picture.png'))
+  #Imperial turrets attacked
+  elif 'Imperial base' in message.content and 'turrets' in message.content:
+    reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
+    await message.add_reaction(reaction_emoji)
+    mess = await editWaypoint(msg)
+    await message.channel.send(mess)
+    await editImg(msg)
+    await message.channel.send(file=discord.File('pasted_picture.png'))
+  #Imperial base attacked
+  elif 'Imperial base' in message.content and 'is under attack' in message.content:
+    reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
+    await message.add_reaction(reaction_emoji)
+    await message.reply(
+        'Our forces have begun an assault on an Imperial base.')
+    mess = await editWaypoint(msg)
+    await message.channel.send(mess)
+    await editImg(msg)
+    await message.channel.send(file=discord.File('pasted_picture.png'))
 
-  elif num == 3 and impBaseTime == 0:
-    impBaseTime = 600  # 10 min
-    while impBaseTime > 0:
-      await asyncio.sleep(1)
-      impBaseTime -= 1
-    print('timer up')
-    # TODO: Add times up message
+  if 'testpost' in message.content:
+    #reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
+    #await message.add_reaction(reaction_emoji)
+    filelist = [
+      discord.File("pasted_picture.png"),
+      discord.File("Tatooine.png"),
+      discord.File("Naboo.png")
+    ]
+    await message.channel.send(files = filelist)
 
-  elif num == 4 and impTurretTime == 0:
-    impTurretTime = 1200  # 20 min
-    while impTurretTime > 0:
-      await asyncio.sleep(1)
-      impTurretTime -= 1
-    print('timer up')
-    # TODO: Add times up message
-  return newTime
-
-
+#event for incoming messages
+#checks channel id and content for keywords for attacks
 @client.event
 async def on_message(message):
-  global rebBaseTime, rebTurretTime, impBaseTime, impTurretTime
+  global rebBaseTime, rebTurretTime, impBaseTime, impTurretTime, q, pausedPings
   msg = message.content
-  mess = ''
+
   if message.channel.id in [
       1149773441956851713, 1127862884618211328, 1152231778342408223
   ]:
-    #Rebel base attacked
-    if 'Rebel base' in message.content and 'is under attack' in message.content:
-      reaction_emoji = discord.utils.get(message.guild.emojis, name='empire')
-      await message.add_reaction(reaction_emoji)
-      await message.reply(
-          '<@&1090033169782296627> Imperial troops have entered the base!')
-      mess = await editWaypoint(msg)
-      await message.channel.send(mess)
-      await editImg(msg)
-      await message.channel.send(file=discord.File('pasted_picture.png'))
-    #Rebel turrets attacked
-    elif 'Rebel base' in message.content and 'turrets' in message.content:
-      reaction_emoji = discord.utils.get(message.guild.emojis, name='empire')
-      await message.add_reaction(reaction_emoji)
-      await message.reply('<@&1090033169782296627> Our turrets are taking fire!')
-      mess = await editWaypoint(msg)
-      await message.channel.send(mess)
-      await editImg(msg)
-      await message.channel.send(file=discord.File('pasted_picture.png'))
-    #Imperial turrets attacked
-    elif 'Imperial base' in message.content and 'turrets' in message.content:
-      reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
-      await message.add_reaction(reaction_emoji)
-      mess = await editWaypoint(msg)
-      await message.channel.send(mess)
-      await editImg(msg)
-      await message.channel.send(file=discord.File('pasted_picture.png'))
-    #Imperial base attacked
-    elif 'Imperial base' in message.content and 'is under attack' in message.content:
-      reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
-      await message.add_reaction(reaction_emoji)
-      await message.reply(
-          'Our forces have begun an assault on an Imperial base.')
-      mess = await editWaypoint(msg)
-      await message.channel.send(mess)
-      await editImg(msg)
-      await message.channel.send(file=discord.File('pasted_picture.png'))
+    #if any keyboards present, queue message
+    if 'base' in message.content and 'attack' in message.content:
+      newMessage = True
+      for i in pausedPings:
+        pMessage = i
+        pContent = pMessage.content
+        if message.content == pContent:
+          newMessage = False
+          print('repeat message found. Discarded')
+          break
 
-    #if 'Test' in message.content:
-    #reaction_emoji = discord.utils.get(message.guild.emojis, name='reb')
-    #await message.add_reaction(reaction_emoji)
+      if newMessage == True:  
+        q.append(message) #dd message to queue
+        pausedPings.append(message)
+        await pause_timer(message)
 
 #take the GCW text and place waypoint on correct map image
 async def editImg(message):
@@ -202,6 +209,8 @@ async def on_raw_reaction_add(payload):
   #get channel and message content
   channelID = payload.channel_id
   messageID = payload.message_id
+  user_id = payload.user_id
+  
   channel = client.get_channel(channelID)
   message = await channel.fetch_message(messageID)
   msg= message.content
@@ -215,8 +224,5 @@ async def on_raw_reaction_add(payload):
         await channel.send(mess)
         await editImg(msg)                   #add the waypoint to the correct map image
         await channel.send(file=discord.File('pasted_picture.png'))
-
-
-#TOKEN = os.getenv('DISCORD_TOKEN')
 
 client.run(TOKEN)
